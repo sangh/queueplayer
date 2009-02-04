@@ -1,0 +1,79 @@
+#!/usr/bin/perl
+
+use strict;
+
+my $pl="/tmp/q.playlist-future";
+my $plh="/tmp/q.playlist-history";
+my $responsef = "/tmp/q.response";
+my $read_pipe = "/tmp/q.cmds-to-p";
+my $q_player = "/usr/local/bin/q.player";
+my $mx_log = "/tmp/q.mx-log";
+my $mx_err = "/tmp/q.mx-err";
+
+
+use Fcntl qw(:DEFAULT :flock);
+
+
+# This is our error output file.
+sub response {
+    open(F, "+>>" . $responsef)
+    && print F "@_\n";
+    close(F);
+	chmod 0666, $responsef;
+	exit 1;
+}
+
+sub get_next_cut {
+
+	my @f = ();
+	my $line = undef;
+
+	# Try to read in the first line.
+	sysopen(F, $pl, O_RDWR | O_CREAT) || response "Could not open/read " . $pl . ": $!";
+	flock(F, LOCK_EX) || response "Could not get lock on " . $pl . ": $!";
+	@f = <F>;
+	# Write out everything but the first line.
+	if($#f >= 0) { # Is -1 on no lines, etc.
+		# Now truncate the file.
+		truncate(F, 0);
+		seek(F, 0, 0);
+		$line = @f[0];  # Get the first, and maybe only line.
+		if($#f >= 1) {  # If there ar lines to write out.
+			print F @f[1 .. $#f];
+		}
+	} else {
+		$line = undef;
+	}
+	close F;  # This unlocks without calling flock.
+
+	# Write out the line in history, if there.
+	if($line) {
+		open(H, "+>>" . $plh) || response "Could not open/append " . $plh . ": $!";
+		flock(H, LOCK_EX) || response "Could not get lock on " .$plh . ": $!";
+		print H "$line";
+		close(H); # This removes the flock.
+		# Now we do some line munging before returning.
+		chomp $line;
+	}
+
+	return($line);
+}  # End get_next_cut.
+
+# First some sanity checking.
+( ( -p $read_pipe ) && ( -w $read_pipe ) ) || response "Named pipe \"$read_pipe\" is not writable.\n";
+
+# Start the infinite loop.
+while(1) {
+	my $cut = get_next_cut;
+	if($cut) {
+		# We want to make sure that there is nothing in the pipe.
+		system("echo -n cccc >> $read_pipe &");
+		system("cat $read_pipe >&/dev/null");
+		# 'c' is an un-bound key in mplayer.  We need to "prime" the pipe.
+		system("echo -n cccc >> $read_pipe &");
+		system("/usr/local/bin/m \"$cut\" <$read_pipe >$mx_log 2>$mx_err");
+	} else {
+		# This is a perl badism to sleep less than a second.
+		select(undef, undef, undef, 0.5);
+	}
+}
