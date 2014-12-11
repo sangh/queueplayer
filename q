@@ -4,13 +4,13 @@ my $pl="/tmp/q.playlist-future";
 my $plh="/tmp/q.playlist-history";
 my $responsef = "/tmp/q.response";
 my $read_pipe = "/tmp/q.cmds-to-p";
-my $q_player = "/usr/local/bin/q.player";
+my $q_player = "q.player";
 my $mx_log = "/tmp/q.mx-log";
 my $mx_err = "/tmp/q.mx-err";
 my $q_pl_prefix = "/tmp/q.saved-playlist-"; #Cannot have any shell-interperatable chars.
 
-
-my $isrun = "/usr/local/bin/isrunning";
+# https://github.com/sangh/isrunning/
+my $isrun = "isrunning";
 
 my $debug = undef;
 #my $debug = "yes";
@@ -198,9 +198,9 @@ sub func_kill {
 
 
 	$tmp_pid = `$isrun -c $read_pipe`;
-	#system("/usr/bin/pkill -P $tmp_pid"); # kill proc with this parent pid.
+	#system("pkill -P $tmp_pid"); # kill proc with this parent pid.
 	select(undef, undef, undef, 0.1); # Silly perl sleep substitute.
-	system("/usr/bin/kill $tmp_pid");
+	system("kill $tmp_pid");
 	$tmp_pid = `$isrun -c $read_pipe`;
 	chomp $tmp_pid;
 	if($tmp_pid != 0) {
@@ -215,9 +215,9 @@ sub func_kill {
 
 	# Kill everythig again.
 	$tmp_pid = `$isrun -c $read_pipe`;
-	#system("/usr/bin/pkill -P $tmp_pid"); # kill proc with this parent pid.
+	#system("pkill -P $tmp_pid"); # kill proc with this parent pid.
 	select(undef, undef, undef, 0.1); # Silly perl sleep substitute.
-	system("/usr/bin/kill $tmp_pid");
+	system("kill $tmp_pid");
 	$tmp_pid = `$isrun -c $read_pipe`;
 	chomp $tmp_pid;
 	if($tmp_pid != 0) {

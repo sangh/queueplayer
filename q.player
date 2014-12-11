@@ -6,7 +6,6 @@ my $pl="/tmp/q.playlist-future";
 my $plh="/tmp/q.playlist-history";
 my $responsef = "/tmp/q.response";
 my $read_pipe = "/tmp/q.cmds-to-p";
-my $q_player = "/usr/local/bin/q.player";
 my $mx_log = "/tmp/q.mx-log";
 my $mx_err = "/tmp/q.mx-err";
 
